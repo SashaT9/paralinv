@@ -3,8 +3,8 @@ import os
 import subprocess
 import glob
 import time
-from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
+from tqdm import tqdm
 
 # --- Configuration ---
 TIMEOUT_SEC = 10.0
@@ -72,45 +72,36 @@ def main():
         print(f"{C.RED}Error: Model solution {MODEL_SOL} not found.{C.RESET}")
         return
 
-    # 1. Generate References
+    # 1. Generate References (Sequential)
     print(f"Generating references using {MODEL_SOL}...")
     references = {}
-    with ThreadPoolExecutor() as executor:
-        future_to_test = {executor.submit(run_process, model_path, t): t for t in tests}
-        for future in future_to_test:
-            test_path = future_to_test[future]
-            out, _, status = future.result()
-            references[test_path] = out
+    for t in tqdm(tests):
+        out, _, status = run_process(model_path, t)
+        if status != "OK":
+            print(
+                f"{C.YELLOW}Warning: Model timed out on {os.path.basename(t)}{C.RESET}"
+            )
+        references[t] = out
 
-    # 2. Benchmark
-    print(
-        f"Benchmarking {len(solutions)} solutions on {len(tests)} tests (Parallel)..."
-    )
+    # 2. Benchmark (Sequential)
+    print(f"Benchmarking {len(solutions)} solutions on {len(tests)} tests...")
 
-    tasks = []
     results = []
 
-    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
-        for sol in solutions:
-            for test in tests:
-                f = executor.submit(run_process, sol, test)
-                f.meta_sol = sol
-                f.meta_test = test
-                tasks.append(f)
+    for sol in tqdm(solutions):
+        for test in tqdm(tests):
+            output, duration, run_status = run_process(sol, test)
 
-        for future in tasks:
-            sol_path = future.meta_sol
-            test_path = future.meta_test
-            output, duration, run_status = future.result()
-
-            expected = references.get(test_path, "")
+            # Check correctness
+            expected = references.get(test, "")
             final_status = run_status
+
             if run_status == "OK" and output != expected:
                 final_status = "WA"
 
-            # Print Progress
-            sol_name = os.path.basename(sol_path)
-            test_name = os.path.basename(test_path)
+            # Print Progress immediately
+            sol_name = os.path.basename(sol)
+            test_name = os.path.basename(test)
             print(
                 f"[{colorize(final_status, final_status)}] {sol_name} @ {test_name} ({duration:.2f}s)"
             )
@@ -124,10 +115,11 @@ def main():
                 }
             )
 
-    # 3. Aggregate
+    # 3. Aggregate Results by N
     aggregated = defaultdict(lambda: defaultdict(list))
     for r in results:
         try:
+            # Assumes format "test_100_1.in" -> 100
             n = int(r["test"].split("_")[1])
         except:
             n = 0
@@ -136,11 +128,9 @@ def main():
     # 4. Print Table
     all_ns = sorted(list(set(k for sol in aggregated for k in aggregated[sol])))
 
-    # Increased width to fit "OK (av:10.00 mx:10.00)"
     col_width = 28
     first_col_width = 20
 
-    # Header
     header_cells = [f"n={n}".ljust(col_width) for n in all_ns]
     print("\n" + "=" * (first_col_width + 3 + len(all_ns) * (col_width + 3)))
     print(f"{'Solution'.ljust(first_col_width)} | " + " | ".join(header_cells))
@@ -158,6 +148,7 @@ def main():
             stats = [x["status"] for x in group]
             times = [x["time"] for x in group]
 
+            # Determine group status
             if "TIMEOUT" in stats:
                 cell_status = "TIMEOUT"
             elif "WA" in stats:
@@ -171,9 +162,7 @@ def main():
             # Format: STATUS (av:0.00 mx:0.00)
             text = f"{cell_status} (av:{avg_time:.2f} mx:{max_time:.2f})"
 
-            # Pad text to maintain alignment
             padded_text = text.ljust(col_width)
-            # Colorize output
             row_str += f"{colorize(padded_text, cell_status)} | "
 
         print(row_str)
