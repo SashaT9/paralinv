@@ -34,6 +34,8 @@ long long ms(int *l, int *r) {
     return lc + rc + ms_merge(l, m, r);
 }
 int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(NULL);
     int n;
     std::cin >> n;
     std::vector<int> a(n);

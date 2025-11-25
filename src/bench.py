@@ -88,8 +88,8 @@ def main():
 
     results = []
 
-    for sol in tqdm(solutions):
-        for test in tqdm(tests):
+    for sol in solutions:
+        for test in tests:
             output, duration, run_status = run_process(sol, test)
 
             # Check correctness

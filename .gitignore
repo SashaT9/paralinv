@@ -42,3 +42,7 @@
 
 #for python venv
 .venv
+
+# mine
+src/tests
+src/bin
