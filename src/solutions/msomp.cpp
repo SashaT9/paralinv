@@ -49,7 +49,7 @@ long long ms_merge(int *l, int *m, int *r) {
         }
         p += nxt - i;
         p += it - j;
-        cnt += (it - j) * (m - nxt);
+        cnt += (long long)(it - j) * (m - nxt);
         j = it;
     }
     if (j < r) {

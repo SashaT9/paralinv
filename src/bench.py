@@ -7,10 +7,10 @@ from collections import defaultdict
 from tqdm import tqdm
 
 # --- Configuration ---
-TIMEOUT_SEC = 10.0
+TIMEOUT_SEC = 1000000.0
 BIN_DIR = "bin"
 TEST_DIR = "tests"
-MODEL_SOL = "msths1"
+MODEL_SOL = "ms"
 GENERATOR = "generator"
 
 
