@@ -26,7 +26,7 @@ long long ms_merge(int *l, int *m, int *r) {
 }
 
 static std::atomic<int> num_threads(0);
-const int MAX_THREADS = 16;
+const int MAX_THREADS = std::thread::hardware_concurrency();
 
 // solving a[l..r)
 long long ms(int *l, int *r) {

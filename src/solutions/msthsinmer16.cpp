@@ -3,7 +3,7 @@
 #include <thread>
 #include <vector>
 
-const int MAX_THREADS = 16;
+const int MAX_THREADS = std::thread::hardware_concurrency();
 const int PARALLEL_THRESHOLD = 1 << 17;
 
 // merge [l1, r1), [l2, r2)

@@ -1,0 +1,105 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{titlesec}
+\usepackage{array}
+\usepackage{makecell}
+
+\renewcommand{\arraystretch}{1.3}
+\titleformat{\section}{\large\bfseries}{\thesection.}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection.}{1em}{}
+
+\title{Parallel Merge Sort: Oleksandr Tymkovych}
+\date{}
+\begin{document}
+
+\maketitle
+\thispagestyle{empty} % No page number on the first page
+
+\section*{Problem}
+The problem name is ``Kapral'' from MP course.
+It is equivallent to counting the number of inversions in the array.
+During the course, it was required to do this using \textsc{MergeSort}.
+
+\section*{Tests}
+Each test is a uniformly random permutation with the length $n\in
+\{10^4, 2\cdot 10^5, 2\cdot 10^6,
+5\cdot 10^7\}$.
+
+\section*{Solutions}
+The first solution is a usual merge sort on one thread.
+I use it to check the outputs for correctness.
+
+The first idea that comes to mind how to parallelize merge sort is to
+run recursion calls for left and right part in different threads.
+In such way we would need $\mathcal{O}(n)$ threads.
+I fixed this problem with an atomic counter of the number of threads used.
+Overall this parallelization gives pretty good results.
+
+The second idea is to somehow parallelize the merge function.
+We know that both parts are already sorted.
+Suppose the left part has length $m$, we will divide it into $k$ blocks.
+We want each block to merge with some part from the right part, and
+we can find that part using binary search in $\mathcal{O}(k\log{m})$
+Then we merge those smaller blocks which have sizes $m/k$ in linear time.
+There is a little caveat here, the matches of blocks could happen to
+be bad, for example the first block matches with the whole right part.
+The simplest counter example is the array $[n, n-1, \dots, 1]$.
+However, the tests I use are random permutations, what implies that
+the blocks from right part should have uniformly distributed sizes.
+If we choose $k$ is the number of threads it should speed up the
+merge function. Also, there is great overhead for running this merge
+for small length parts so I do usual merge for parts that are less
+then $2^{17}$. This constant gave me the best results.
+However, in practice the first speed up is better.
+
+The third idea is just to combine two previous ones. First two ideas
+I implemented with \texttt{std::thread} and the third
+idea with OpenMP.
+
+Each solution is compiled with flags \texttt{-std=c++11 -Wall
+-march=native -O3} plus \texttt{-fopenmp} for the third solution.
+
+\section*{Results}
+\begin{table}[htbp]
+  \centering
+  \caption{Running on my laptop with 16 threads CPU: AMD Ryzen 7 PRO 8840U}
+
+  \small
+  \begin{tabular}{|l|l|l|l|l|}
+    \hline
+    \textbf{Solution} & \textbf{$n=10^4$} & \textbf{$n=2\cdot 10^5$} &
+    \textbf{$n=2\cdot 10^6$} & \textbf{$n=5\cdot 10^7$} \\
+    \hline
+
+    Usual &
+    \makecell[l]{avg: 0.00 \\ mx: 0.00} &
+    \makecell[l]{avg: 0.02 \\ mx: 0.03} &
+    \makecell[l]{avg: 0.23 \\ mx: 0.23} &
+    \makecell[l]{avg: 6.27 \\ mx: 6.32} \\
+    \hline
+
+    Parallel Merge &
+    \makecell[l]{avg: 0.00 \\ mx: 0.00} &
+    \makecell[l]{avg: 0.02 \\ mx: 0.03} &
+    \makecell[l]{avg: 0.21 \\ mx: 0.22} &
+    \makecell[l]{avg: 5.50 \\ mx: 5.56} \\
+    \hline
+
+    \makecell[l]{Parallel Recursive \\ Calls} &
+    \makecell[l]{avg: 0.01 \\ mx: 0.01} &
+    \makecell[l]{avg: 0.03 \\ mx: 0.04} &
+    \makecell[l]{avg: 0.23 \\ mx: 0.30} &
+    \makecell[l]{avg: 4.49 \\ mx: 4.98} \\
+    \hline
+
+    \makecell[l]{Parallel Merge \& \\ Recursive Calls} &
+    \makecell[l]{avg: 0.01 \\ mx: 0.02} &
+    \makecell[l]{avg: 0.02 \\ mx: 0.03} &
+    \makecell[l]{avg: 0.11 \\ mx: 0.13} &
+    \makecell[l]{avg: 2.58 \\ mx: 2.62} \\
+    \hline
+  \end{tabular}
+\end{table}
+\end{document}
