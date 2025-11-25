@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++11 -Wall
+CXXFLAGS = -std=c++11 -Wall -march=native -O3
 
 SRCDIR = solutions
 BINDIR = bin
@@ -10,6 +10,12 @@ SOURCES = $(SOURCES_SOLUTIONS) generator.cpp
 
 EXECUTABLES_SOLUTIONS = $(patsubst $(SRCDIR)/%.cpp,$(BINDIR)/%,$(SOURCES_SOLUTIONS))
 EXECUTABLES = $(EXECUTABLES_SOLUTIONS) $(BINDIR)/generator
+
+OMP_SOURCES = $(wildcard $(SRCDIR)/*omp.cpp)
+OMP_EXECUTABLES = $(patsubst $(SRCDIR)/%.cpp,$(BINDIR)/%,$(OMP_SOURCES))
+
+$(OMP_EXECUTABLES): CXXFLAGS += -fopenmp
+
 
 .PHONY: all clean
 
@@ -25,4 +31,4 @@ $(BINDIR)/generator: generator.cpp
 
 clean:
 	rm -rf $(BINDIR)
-	rm -rf $(TESTDIR)
+	# rm -rf $(TESTDIR)

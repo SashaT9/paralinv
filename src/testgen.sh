@@ -16,7 +16,7 @@ do
 done
 for i in $(seq 1 15)
 do
-    ./bin/generator 10000000 >tests/test_10000000_$i.in
+    ./bin/generator 50000000 >tests/test_50000000_$i.in
 done
 
 echo OK
