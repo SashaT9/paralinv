@@ -26,7 +26,7 @@ long long ms_merge_core(int *l1, int *r1, int *l2, int *r2, int *buf) {
 }
 
 long long ms_merge(int *l, int *m, int *r) {
-    long long cnt = 0;
+    long long cnt = 0, cntloc = 0;
     std::vector<int> b(r - l);
     int *p = b.data();
     if (r - l <= PARALLEL_THRESHOLD) {
@@ -49,7 +49,7 @@ long long ms_merge(int *l, int *m, int *r) {
         }
         p += nxt - i;
         p += it - j;
-        cnt += (long long)(it - j) * (m - nxt);
+        cntloc += (long long)(it - j) * (m - nxt);
         j = it;
     }
     if (j < r) {
@@ -60,7 +60,7 @@ long long ms_merge(int *l, int *m, int *r) {
     for (int k = 0; k < r - l; ++k) {
         l[k] = b[k];
     }
-    return cnt;
+    return cnt + cntloc;
 }
 
 // solving a[l..r)
